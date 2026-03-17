@@ -1,0 +1,115 @@
+# If
+# Evaluating the roots of a quadratic equation ax^2 + bx + c = 0
+# x = (-b +/- sqrt(b^2 - 4*a*c))/2*a
+# the sign of the determinant b^2 - 4*a*c determines the type of roots: = 0: real & equal; 
+# = +ve number: real and distinct; = -ve: complex 
+
+# a <- as.numeric(readline("Enter a: "))
+# b <- as.numeric(readline("Enter b: "))
+# c <- as.numeric(readline("Enter c: "))
+# 
+# det <- b^2 - 4*a*c
+# print(paste0("Determinant = ",det))
+# if(det >= 0){
+#   print(paste0("The roots of the equation ",a,"x^2 + ",b,"x ",if(sign(c) < 0){
+#     "- "
+#   }
+#   else{
+#     "+ "
+#   },abs(c), " = 0 are real!"))
+# }
+
+# Else when roots are complex
+
+# Else if for all possible determinants
+
+# BMI Classification from Excel Slides
+# height <- as.numeric(readline("Enter height in centimeters: "))
+# weight <- as.numeric(readline("Enter weight in kilograms: "))
+# bmi <- weight/(height/100)^2
+# # 
+
+
+#Switch
+# year_of_study <- as.numeric(readline("Enter your year of study: "))
+# switch(year_of_study,
+#        print("Freshperson"),
+#        print("Experienced"),
+#        print("Very Experienced"),
+#        print("Ready to graduate"))
+# 
+# # for(i in c(-1:3,9))print(switch(i, 1, 2, 3, 4))
+# 
+# #Loops
+# #While
+# i <- 1
+# while(i <= 5){
+#   print("Hello")
+#   i <- i+1
+# }
+# 
+# # For loop
+# sequence <- seq(1:30)
+# for(var in sequence){
+#   print(var)
+# }
+# 
+# vector <- c("I","AM","GERALD","KIO")
+# for(var in vector){
+#   print(var)
+# }
+
+# maxi <- function(a,b){
+#   if(a >= b){
+#     # return(a)
+#   }else{
+#     # return(b)
+#   }
+# }
+
+# circle <- function(centerx = 0, centery = 0, radius = 1, samples = 64){
+#   x <- c()
+#   y <- c()
+#   for(samp in 1:samples){
+#     x[samp] <- radius*cos(2*pi*samp/samples) + centerx
+#     y[samp] <- radius*sin(2*pi*samp/samples) + centery
+#   }
+#   plot(x,y, asp = 1)
+# }
+
+
+circle <- function(xcord, ycord, radius, nsamples = 64){
+  x <- c()
+  y <- c()
+  
+  for(sample in 1:nsamples){
+    x[sample] <- radius*cos(2*pi*sample/nsamples) + xcord
+    y[sample] <- radius*sin(2*pi*sample/nsamples) + ycord
+  }
+  plot(x,y,asp=1)
+  
+}
+
+
+# # Iteration 1: step = 1
+# angle <- 2*pi*step/numberOfSteps
+# angle <- 2*pi*1/64
+# x[1] <- cos(angle)
+# y[1] <- sin(angle)
+# 
+# 
+# 
+# # Iteratiion 2: step = 2
+# angle <- 2*pi*step/numberOfSteps
+# angle <- 2*pi*2/64
+# x[2] <- cos(angle)
+# y[2] <- sin(angle)
+# 
+# # Iteratiion 3: step = 3
+# # ...
+# # Iteratiion 64: step = 64
+# angle <- 2*pi*step/numberOfSteps
+# angle <- 2*pi*64/64
+# x[64] <- cos(angle)
+# y[64] <- sin(angle)
+# #Iter

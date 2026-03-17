@@ -1,243 +1,269 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ProteinLens — Binding Site Explorer</title>
   <script type="module" src="/src/main.js"></script>
 </head>
+
 <body>
-<div class="container">
-  <header>
-    <div class="logo">
-      <div class="logo-icon">
-        <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="22" cy="22" r="20" stroke="#1a3050" stroke-width="1.5"/>
-          <circle cx="22" cy="22" r="8" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="4 2"/>
-          <circle cx="22" cy="10" r="3" fill="#7b2fff"/>
-          <circle cx="34" cy="22" r="3" fill="#00d4ff"/>
-          <circle cx="22" cy="34" r="3" fill="#00ff88"/>
-          <circle cx="10" cy="22" r="3" fill="#ff6b35"/>
-          <line x1="22" y1="13" x2="22" y2="14" stroke="#1a3050" stroke-width="1.5"/>
-          <line x1="31" y1="22" x2="30" y2="22" stroke="#1a3050" stroke-width="1.5"/>
-          <line x1="22" y1="31" x2="22" y2="30" stroke="#1a3050" stroke-width="1.5"/>
-          <line x1="13" y1="22" x2="14" y2="22" stroke="#1a3050" stroke-width="1.5"/>
-        </svg>
-      </div>
-      <h1>Protein<span>Lens</span></h1>
-    </div>
-    <div class="tagline">AlphaFold · Binding Site Analysis · Disease Variant Mapping</div>
-  </header>
-
-  <!-- SEARCH -->
-  <div class="search-section">
-    <label class="search-label">▸ Search Protein</label>
-    <div class="search-row">
-      <div class="search-input-wrap">
-        <input type="text" id="searchInput" placeholder="UniProt ID, gene name, or protein name..." />
-      </div>
-      <div class="search-type-wrap">
-        <button class="type-btn active" id="typeUniprot" onclick="setType('uniprot')">UniProt ID</button>
-        <button class="type-btn" id="typeGene" onclick="setType('gene')">Gene Name</button>
-      </div>
-      <button class="btn-primary" id="searchBtn" onclick="runSearch()">▶ Analyze</button>
-    </div>
-    <div class="quick-examples">
-      Try:
-      <span onclick="quickSearch('P04637', 'uniprot')">TP53 (P04637)</span>
-      <span onclick="quickSearch('P00533', 'uniprot')">EGFR (P00533)</span>
-      <span onclick="quickSearch('P35557', 'uniprot')">GCK (P35557)</span>
-      <span onclick="quickSearch('P01116', 'uniprot')">KRAS (P01116)</span>
-      <span onclick="quickSearch('P0DTD1', 'uniprot')">SARS-CoV-2 3CLpro</span>
-    </div>
-    <div class="search-helper">
-      <span class="mini-pill">Gene mode: reviewed human entries only</span>
-      <span class="mini-pill">pLDDT now parsed from AlphaFold mmCIF when available</span>
-    </div>
-  </div>
-
-  <!-- STATUS -->
-  <div class="status-bar" id="statusBar">
-    <div class="spinner"></div>
-    <span class="status-text" id="statusText">Querying UniProt...</span>
-  </div>
-
-  <!-- ERROR -->
-  <div class="error-box" id="errorBox"></div>
-
-  <!-- RESULTS -->
-  <div id="results">
-    <!-- Protein Header -->
-    <div class="protein-header">
-      <div>
-        <div class="protein-name" id="resName">—</div>
-        <div class="protein-gene" id="resGene">—</div>
-        <div class="protein-organism" id="resOrganism">—</div>
-        <div class="ext-links" id="extLinks"></div>
-      </div>
-      <div class="confidence-badge">
-        <div class="conf-label">AlphaFold avg pLDDT</div>
-        <div class="conf-score" id="confScore">—</div>
-        <div class="conf-desc" id="confDesc">—</div>
-      </div>
-    </div>
-
-    <div class="provenance-grid">
-      <div class="prov-card">
-        <div class="prov-label">Data provenance</div>
-        <div class="prov-title">UniProt annotations</div>
-        <div class="prov-body">Sequence, natural variants, disease comments, GO terms, and annotated residues come directly from the UniProt entry.</div>
-      </div>
-      <div class="prov-card">
-        <div class="prov-label">Data provenance</div>
-        <div class="prov-title">AlphaFold confidence</div>
-        <div class="prov-body">Average confidence and confidence bins are calculated from per-residue pLDDT values parsed from the AlphaFold mmCIF model when available.</div>
-      </div>
-      <div class="prov-card">
-        <div class="prov-label">Interpretation</div>
-        <div class="prov-title">Inferred summaries</div>
-        <div class="prov-body">Priority labels and short notes are interface-level summaries. They are not new experimental predictions.</div>
-      </div>
-    </div>
-
-    <!-- Disease Alert -->
-    <div class="disease-alert" id="diseaseAlert">
-      <div class="disease-alert-header">
-        <span class="alert-tag">⚠ Disease Association</span>
-        <span class="alert-title">Pathogenic variants reported</span>
-      </div>
-      <div class="disease-list" id="diseaseList"></div>
-    </div>
-
-    <!-- Sequence strip -->
-    <div class="section-full">
-      <div class="panel-header">
-        <div class="panel-icon" style="background:rgba(0,212,255,0.1)">🧬</div>
-        <div class="panel-title">Canonical Sequence</div>
-        <span style="font-size:0.7rem;color:var(--text-dim);margin-left:auto" id="seqLen">—</span>
-      </div>
-      <div class="panel-body">
-        <div class="sequence-strip" id="seqStrip">—</div>
-      </div>
-    </div>
-
-    <!-- Main grid -->
-    <div class="analysis-grid">
-      <!-- Binding Sites -->
-      <div class="panel">
-        <div class="panel-header">
-          <div class="panel-icon" style="background:rgba(0,255,136,0.1)">🔬</div>
-          <div class="panel-title">Annotated Functional / Binding Residues</div>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="22" cy="22" r="20" stroke="#1a3050" stroke-width="1.5" />
+            <circle cx="22" cy="22" r="8" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="4 2" />
+            <circle cx="22" cy="10" r="3" fill="#7b2fff" />
+            <circle cx="34" cy="22" r="3" fill="#00d4ff" />
+            <circle cx="22" cy="34" r="3" fill="#00ff88" />
+            <circle cx="10" cy="22" r="3" fill="#ff6b35" />
+            <line x1="22" y1="13" x2="22" y2="14" stroke="#1a3050" stroke-width="1.5" />
+            <line x1="31" y1="22" x2="30" y2="22" stroke="#1a3050" stroke-width="1.5" />
+            <line x1="22" y1="31" x2="22" y2="30" stroke="#1a3050" stroke-width="1.5" />
+            <line x1="13" y1="22" x2="14" y2="22" stroke="#1a3050" stroke-width="1.5" />
+          </svg>
         </div>
-        <div class="panel-body" id="bindingSites">
-          <div style="color:var(--text-dim);font-size:0.8rem">Loading...</div>
+        <h1>Protein<span>Lens</span></h1>
+      </div>
+      <div class="tagline">AlphaFold · Binding Site Analysis · Disease Variant Mapping</div>
+    </header>
+
+    <!-- SEARCH -->
+    <div class="search-section">
+      <label class="search-label">▸ Search Protein</label>
+      <div class="search-row">
+        <div class="search-input-wrap">
+          <input type="text" id="searchInput" placeholder="UniProt ID, gene name, or protein name..." />
+        </div>
+        <div class="search-type-wrap">
+          <button class="type-btn" id="typeDisease" onclick="setType('disease')">Disease / Symptom</button>
+          <button class="type-btn active" id="typeUniprot" onclick="setType('uniprot')">UniProt ID</button>
+          <button class="type-btn" id="typeGene" onclick="setType('gene')">Gene Name</button>
+        </div>
+        <button class="btn-primary" id="searchBtn" onclick="runSearch()">▶ Analyze</button>
+      </div>
+      <div class="quick-examples">
+        Try:
+        <span onclick="quickSearch('P04637', 'uniprot')">TP53 (P04637)</span>
+        <span onclick="quickSearch('P00533', 'uniprot')">EGFR (P00533)</span>
+        <span onclick="quickSearch('P35557', 'uniprot')">GCK (P35557)</span>
+        <span onclick="quickSearch('P01116', 'uniprot')">KRAS (P01116)</span>
+        <span onclick="quickSearch('P0DTD1', 'uniprot')">SARS-CoV-2 3CLpro</span>
+      </div>
+      <div class="search-helper">
+        <span class="mini-pill">Gene mode: reviewed human entries only</span>
+        <span class="mini-pill">pLDDT now parsed from AlphaFold mmCIF when available</span>
+      </div>
+    </div>
+
+    <!-- STATUS -->
+    <div class="status-bar" id="statusBar">
+      <div class="spinner"></div>
+      <span class="status-text" id="statusText">Querying UniProt...</span>
+    </div>
+
+    <!-- ERROR -->
+    <div class="error-box" id="errorBox"></div>
+
+    <!-- RESULTS -->
+    <div id="results">
+      <!-- Protein Header -->
+      <div class="protein-header">
+        <div>
+          <div class="protein-name" id="resName">—</div>
+          <div class="protein-gene" id="resGene">—</div>
+          <div class="protein-organism" id="resOrganism">—</div>
+          <div class="ext-links" id="extLinks"></div>
+        </div>
+        <div class="confidence-badge">
+          <div class="conf-label">AlphaFold avg pLDDT</div>
+          <div class="conf-score" id="confScore">—</div>
+          <div class="conf-desc" id="confDesc">—</div>
         </div>
       </div>
 
-      <!-- pLDDT Breakdown -->
-      <div class="panel">
+      <div class="provenance-grid">
+        <div class="prov-card">
+          <div class="prov-label">Data provenance</div>
+          <div class="prov-title">UniProt annotations</div>
+          <div class="prov-body">Sequence, natural variants, disease comments, GO terms, and annotated residues come
+            directly from the UniProt entry.</div>
+        </div>
+        <div class="prov-card">
+          <div class="prov-label">Data provenance</div>
+          <div class="prov-title">AlphaFold confidence</div>
+          <div class="prov-body">Average confidence and confidence bins are calculated from per-residue pLDDT values
+            parsed from the AlphaFold mmCIF model when available.</div>
+        </div>
+        <div class="prov-card">
+          <div class="prov-label">Interpretation</div>
+          <div class="prov-title">Inferred summaries</div>
+          <div class="prov-body">Priority labels and short notes are interface-level summaries. They are not new
+            experimental predictions.</div>
+        </div>
+      </div>
+
+      <!-- Disease Alert -->
+      <div class="disease-alert" id="diseaseAlert">
+        <div class="disease-alert-header">
+          <span class="alert-tag">⚠ Disease Association</span>
+          <span class="alert-title">Pathogenic variants reported</span>
+        </div>
+        <div class="disease-list" id="diseaseList"></div>
+      </div>
+
+      <!-- Sequence strip -->
+      <div class="section-full">
         <div class="panel-header">
-          <div class="panel-icon" style="background:rgba(123,47,255,0.1)">📊</div>
-          <div class="panel-title">Structure Confidence (pLDDT)</div>
+          <div class="panel-icon" style="background:rgba(0,212,255,0.1)">🧬</div>
+          <div class="panel-title">Canonical Sequence</div>
+          <span style="font-size:0.7rem;color:var(--text-dim);margin-left:auto" id="seqLen">—</span>
         </div>
         <div class="panel-body">
-          <div class="plddt-bar-wrap">
-            <div class="plddt-label"><span>Very High (≥90)</span><span id="pHigh">—</span></div>
-            <div class="plddt-bar"><div class="plddt-fill" id="barHigh" style="width:0%;background:var(--success)"></div></div>
-          </div>
-          <div class="plddt-bar-wrap">
-            <div class="plddt-label"><span>Confident (70–89)</span><span id="pConf">—</span></div>
-            <div class="plddt-bar"><div class="plddt-fill" id="barConf" style="width:0%;background:#66ccff"></div></div>
-          </div>
-          <div class="plddt-bar-wrap">
-            <div class="plddt-label"><span>Low (50–69)</span><span id="pLow">—</span></div>
-            <div class="plddt-bar"><div class="plddt-fill" id="barLow" style="width:0%;background:var(--warn)"></div></div>
-          </div>
-          <div class="plddt-bar-wrap">
-            <div class="plddt-label"><span>Very Low (&lt;50)</span><span id="pVlow">—</span></div>
-            <div class="plddt-bar"><div class="plddt-fill" id="barVlow" style="width:0%;background:var(--danger)"></div></div>
-          </div>
-          <div class="plddt-legend">
-            <div class="legend-item"><div class="legend-dot" style="background:var(--success)"></div>Reliable</div>
-            <div class="legend-item"><div class="legend-dot" style="background:#66ccff"></div>Good</div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--warn)"></div>Flexible</div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--danger)"></div>Disordered</div>
-          </div>
-          <div style="margin-top:16px;font-size:0.72rem;color:var(--text-dim);line-height:1.7" id="plddtNote">—</div>
+          <div class="sequence-strip" id="seqStrip">—</div>
         </div>
       </div>
-    </div>
 
-    <!-- Structure viewer -->
-    <div class="structure-viewer">
-      <div class="viewer-header">
-        <div class="viewer-title">
-          <span>🧊</span>
-          <span>3D Structure — AlphaFold Model</span>
+      <!-- Main grid -->
+      <div class="analysis-grid">
+        <!-- Binding Sites -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-icon" style="background:rgba(0,255,136,0.1)">🔬</div>
+            <div class="panel-title">Annotated Functional / Binding Residues</div>
+          </div>
+          <div class="panel-body" id="bindingSites">
+            <div style="color:var(--text-dim);font-size:0.8rem">Loading...</div>
+          </div>
         </div>
-      </div>
-      <div class="viewer-canvas" id="viewerCanvas">
-        <iframe class="viewer-embed" id="molstarEmbed" title="Embedded Mol* Viewer"></iframe>
-        <div class="backbone" id="svgBackbone"></div>
-        <div class="viewer-overlay">
-          <a class="viewer-link" id="afLink" href="#" target="_blank">↗ Open in AlphaFold DB</a>
-          <a class="viewer-link" id="molstarLink" href="#" target="_blank" style="margin-left:8px">↗ View in Mol* Viewer</a>
-          <div class="viewer-caption">3D interactive structure available at AlphaFold Database</div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Variants / function grid -->
-    <div class="analysis-grid">
-      <!-- Functional annotations -->
-      <div class="panel">
+        <!-- pLDDT Breakdown -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-icon" style="background:rgba(123,47,255,0.1)">📊</div>
+            <div class="panel-title">Structure Confidence (pLDDT)</div>
+          </div>
+          <div class="panel-body">
+            <div class="plddt-bar-wrap">
+              <div class="plddt-label"><span>Very High (≥90)</span><span id="pHigh">—</span></div>
+              <div class="plddt-bar">
+                <div class="plddt-fill" id="barHigh" style="width:0%;background:var(--success)"></div>
+              </div>
+            </div>
+            <div class="plddt-bar-wrap">
+              <div class="plddt-label"><span>Confident (70–89)</span><span id="pConf">—</span></div>
+              <div class="plddt-bar">
+                <div class="plddt-fill" id="barConf" style="width:0%;background:#66ccff"></div>
+              </div>
+            </div>
+            <div class="plddt-bar-wrap">
+              <div class="plddt-label"><span>Low (50–69)</span><span id="pLow">—</span></div>
+              <div class="plddt-bar">
+                <div class="plddt-fill" id="barLow" style="width:0%;background:var(--warn)"></div>
+              </div>
+            </div>
+            <div class="plddt-bar-wrap">
+              <div class="plddt-label"><span>Very Low (&lt;50)</span><span id="pVlow">—</span></div>
+              <div class="plddt-bar">
+                <div class="plddt-fill" id="barVlow" style="width:0%;background:var(--danger)"></div>
+              </div>
+            </div>
+            <div class="plddt-legend">
+              <div class="legend-item">
+                <div class="legend-dot" style="background:var(--success)"></div>Reliable
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#66ccff"></div>Good
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:var(--warn)"></div>Flexible
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:var(--danger)"></div>Disordered
+              </div>
+            </div>
+            <div style="margin-top:16px;font-size:0.72rem;color:var(--text-dim);line-height:1.7" id="plddtNote">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Structure viewer -->
+      <div class="structure-viewer">
+        <div class="viewer-header">
+          <div class="viewer-title">
+            <span>🧊</span>
+            <span>3D Structure — AlphaFold Model</span>
+          </div>
+        </div>
+        <div class="viewer-canvas" id="viewerCanvas">
+          <iframe class="viewer-embed" id="molstarEmbed" title="Embedded Mol* Viewer"></iframe>
+          <div class="backbone" id="svgBackbone"></div>
+          <div class="viewer-overlay">
+            <a class="viewer-link" id="afLink" href="#" target="_blank">↗ Open in AlphaFold DB</a>
+            <a class="viewer-link" id="molstarLink" href="#" target="_blank" style="margin-left:8px">↗ View in Mol*
+              Viewer</a>
+            <div class="viewer-caption">3D interactive structure available at AlphaFold Database</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Variants / function grid -->
+      <div class="analysis-grid">
+        <!-- Functional annotations -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-icon" style="background:rgba(255,107,53,0.1)">⚙️</div>
+            <div class="panel-title">Molecular Function</div>
+          </div>
+          <div class="panel-body">
+            <div class="function-tags" id="funcTags">—</div>
+            <div style="margin-top:14px;font-size:0.72rem;color:var(--text-dim);line-height:1.8" id="funcNote">—</div>
+          </div>
+        </div>
+
+        <!-- Biological process -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-icon" style="background:rgba(0,212,255,0.1)">🔗</div>
+            <div class="panel-title">Biological Process</div>
+          </div>
+          <div class="panel-body">
+            <div class="function-tags" id="procTags">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Variants table -->
+      <div class="section-full">
         <div class="panel-header">
-          <div class="panel-icon" style="background:rgba(255,107,53,0.1)">⚙️</div>
-          <div class="panel-title">Molecular Function</div>
+          <div class="panel-icon" style="background:rgba(255,51,102,0.1)">🧫</div>
+          <div class="panel-title">Disease-Associated Variants</div>
+          <span style="font-size:0.7rem;color:var(--text-dim);margin-left:auto">Source: UniProt Natural Variants</span>
         </div>
-        <div class="panel-body">
-          <div class="function-tags" id="funcTags">—</div>
-          <div style="margin-top:14px;font-size:0.72rem;color:var(--text-dim);line-height:1.8" id="funcNote">—</div>
+        <div class="panel-body" style="overflow-x:auto">
+          <table class="variant-table">
+            <thead>
+              <tr>
+                <th>Position</th>
+                <th>Change</th>
+                <th>Pathogenicity</th>
+                <th>Associated Disease / Note</th>
+              </tr>
+            </thead>
+            <tbody id="variantRows">
+              <tr>
+                <td colspan="4" style="color:var(--text-dim);text-align:center;padding:20px">Loading variants...</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <!-- Biological process -->
-      <div class="panel">
-        <div class="panel-header">
-          <div class="panel-icon" style="background:rgba(0,212,255,0.1)">🔗</div>
-          <div class="panel-title">Biological Process</div>
-        </div>
-        <div class="panel-body">
-          <div class="function-tags" id="procTags">—</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Variants table -->
-    <div class="section-full">
-      <div class="panel-header">
-        <div class="panel-icon" style="background:rgba(255,51,102,0.1)">🧫</div>
-        <div class="panel-title">Disease-Associated Variants</div>
-        <span style="font-size:0.7rem;color:var(--text-dim);margin-left:auto">Source: UniProt Natural Variants</span>
-      </div>
-      <div class="panel-body" style="overflow-x:auto">
-        <table class="variant-table">
-          <thead>
-            <tr>
-              <th>Position</th>
-              <th>Change</th>
-              <th>Pathogenicity</th>
-              <th>Associated Disease / Note</th>
-            </tr>
-          </thead>
-          <tbody id="variantRows">
-            <tr><td colspan="4" style="color:var(--text-dim);text-align:center;padding:20px">Loading variants...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </div><!-- /results -->
-</div><!-- /container -->
+    </div><!-- /results -->
+  </div><!-- /container -->
 </body>
+
 </html>
