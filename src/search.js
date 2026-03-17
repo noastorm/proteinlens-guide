@@ -1,15 +1,14 @@
 /**
  * search.js
- * Loads public/proteins.json on startup and exposes searchDisease(query)
- * which returns the best matching protein entry.
+ * Loads public/proteins.json on startup and exposes searchDisease(query).
+ * Checks the curated disease-map first, then falls back to full-text search.
  */
+
+import { lookupDisease } from './disease-map.js';
 
 let proteinsData = null;
 let loadingPromise = null;
 
-/**
- * Load proteins.json once and cache it in memory.
- */
 export async function loadProteins() {
   if (proteinsData) return proteinsData;
   if (loadingPromise) return loadingPromise;
@@ -29,18 +28,16 @@ export async function loadProteins() {
   return loadingPromise;
 }
 
-/**
- * Search proteins.json for the best match to a query string.
- * Returns { uniprotId, entry } or null if nothing matches.
- *
- * Scoring:
- *  3 pts — exact match in search_terms
- *  2 pts — search_terms entry starts with query
- *  1 pt  — search_terms entry contains query
- *  bonus — gene name matches get +2
- */
 export async function searchDisease(rawQuery) {
   const data = await loadProteins();
+
+  // 1. Check curated map first
+  const curatedId = lookupDisease(rawQuery);
+  if (curatedId && data[curatedId]) {
+    return { uniprotId: curatedId, entry: data[curatedId] };
+  }
+
+  // 2. Fall back to full-text search
   const query = rawQuery.toLowerCase().trim();
   if (!query) return null;
 
@@ -54,16 +51,12 @@ export async function searchDisease(rawQuery) {
     const gene  = (entry.gene || '').toLowerCase();
     const name  = (entry.name || '').toLowerCase();
 
-    // Gene name match
-    if (gene === query)         score += 5;
+    if (gene === query)              score += 5;
     else if (gene.startsWith(query)) score += 3;
+    if (name.includes(query))        score += 2;
 
-    // Protein name match
-    if (name.includes(query))   score += 2;
-
-    // Search terms
     for (const term of terms) {
-      if (term === query)             score += 3;
+      if (term === query)              score += 3;
       else if (term.startsWith(query)) score += 2;
       else if (term.includes(query))   score += 1;
     }
@@ -79,12 +72,8 @@ export async function searchDisease(rawQuery) {
   return { uniprotId: bestId, entry: bestEntry };
 }
 
-/**
- * Return top N matches instead of just the best one.
- * Useful for disambiguation or a "related proteins" panel.
- */
 export async function searchDiseaseTop(rawQuery, n = 3) {
-  const data = await loadProteins();
+  const data  = await loadProteins();
   const query = rawQuery.toLowerCase().trim();
   if (!query) return [];
 
@@ -109,7 +98,5 @@ export async function searchDiseaseTop(rawQuery, n = 3) {
     if (score > 0) scored.push({ uniprotId: id, entry, score });
   }
 
-  return scored
-    .sort((a, b) => b.score - a.score)
-    .slice(0, n);
+  return scored.sort((a, b) => b.score - a.score).slice(0, n);
 }
