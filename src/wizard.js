@@ -53,7 +53,7 @@ export async function renderResults(uniprotId, up, af, { setStatus, hideStatus }
 
   document.getElementById('afLink').href      = `https://alphafold.ebi.ac.uk/entry/${encodeURIComponent(uniprotId)}`;
   document.getElementById('molstarLink').href = `https://molstar.org/viewer/?afdb=${encodeURIComponent(uniprotId)}`;
-  setEmbeddedViewer(uniprotId, !!afEntry);
+  setEmbeddedViewer(uniprotId, afEntry);
 
   let plddtInfo = null;
   if (afEntry) {
@@ -135,15 +135,39 @@ function isWebGLAvailable() {
   }
 }
 
-function setEmbeddedViewer(uniprotId, hasAfModel) {
-  const iframe = document.getElementById('molstarEmbed');
-  if (!hasAfModel || !isWebGLAvailable()) {
+function setEmbeddedViewer(uniprotId, afEntry) {
+  const iframe  = document.getElementById('molstarEmbed');
+  const canvas  = document.getElementById('viewerCanvas');
+  const caption = canvas.querySelector('.viewer-caption');
+
+  // Remove any PAE image from a previous search
+  canvas.querySelector('.pae-img')?.remove();
+
+  if (!afEntry) {
     iframe.classList.remove('visible');
     iframe.removeAttribute('src');
     return;
   }
-  iframe.src = `https://molstar.org/viewer/?afdb=${encodeURIComponent(uniprotId)}&hide-controls=1`;
-  iframe.classList.add('visible');
+
+  if (isWebGLAvailable()) {
+    // Full embedded 3D viewer
+    iframe.src = `https://molstar.org/viewer/?afdb=${encodeURIComponent(uniprotId)}&hide-controls=1`;
+    iframe.classList.add('visible');
+    if (caption) caption.textContent = '3D interactive structure — click to interact, or open in AlphaFold DB';
+  } else if (afEntry.paeImageUrl) {
+    // PAE heatmap fallback — real AlphaFold data, no WebGL required
+    iframe.classList.remove('visible');
+    iframe.removeAttribute('src');
+    const img = document.createElement('img');
+    img.className = 'pae-img';
+    img.src = afEntry.paeImageUrl;
+    img.alt = 'AlphaFold Predicted Aligned Error map';
+    canvas.insertBefore(img, canvas.querySelector('.viewer-overlay'));
+    if (caption) caption.textContent = 'Predicted Aligned Error (PAE) — blue = high inter-residue confidence · Open links above for full 3D viewer';
+  } else {
+    iframe.classList.remove('visible');
+    iframe.removeAttribute('src');
+  }
 }
 
 function renderSequence(seq, features) {
