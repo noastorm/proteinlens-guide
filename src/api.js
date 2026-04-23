@@ -56,19 +56,64 @@ export async function fetchPLDDTFromCif(cifUrl, afEntry) {
 
 function parsePlddtValuesFromCif(cifText) {
   const lines = cifText.split(/\r?\n/);
-  const headerIndex = lines.findIndex(l => l.trim() === '_ma_qa_metric_local.metric_value');
-  if (headerIndex === -1) return [];
 
+  // Find the loop_ block containing _ma_qa_metric_local
+  let inMetricLoop = false;
+  const columnNames = [];
+  let metricValueColIndex = -1;
   const values = [];
-  for (let i = headerIndex + 1; i < lines.length; i++) {
+  let parsingData = false;
+
+  for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    if (!trimmed || trimmed.startsWith('#')) { if (values.length) break; continue; }
-    if (trimmed.startsWith('_') || trimmed === 'loop_') { if (values.length) break; continue; }
-    const parts = trimmed.match(/(?:'[^']*'|"[^"]*"|\S+)/g);
-    if (!parts || parts.length < 6) continue;
-    const value = Number(parts[5].replace(/['"]/g, ''));
-    if (Number.isFinite(value)) values.push(value);
+
+    if (trimmed === 'loop_') {
+      // Reset — start of a new loop block
+      inMetricLoop = false;
+      columnNames.length = 0;
+      metricValueColIndex = -1;
+      parsingData = false;
+      continue;
+    }
+
+    if (trimmed.startsWith('_ma_qa_metric_local.')) {
+      inMetricLoop = true;
+      const colName = trimmed.split('.')[1];
+      columnNames.push(colName);
+      if (colName === 'metric_value') {
+        metricValueColIndex = columnNames.length - 1;
+      }
+      parsingData = false;
+      continue;
+    }
+
+    // Once we've seen column headers and hit a non-header line, we're in data
+    if (inMetricLoop && columnNames.length > 0 && !trimmed.startsWith('_') && trimmed !== 'loop_') {
+      if (!trimmed || trimmed.startsWith('#')) {
+        if (values.length > 0) break; // end of this block
+        continue;
+      }
+
+      parsingData = true;
+
+      // Parse the row — handle quoted tokens
+      const parts = trimmed.match(/(?:'[^']*'|"[^"]*"|\S+)/g);
+      if (!parts) continue;
+
+      if (metricValueColIndex >= 0 && metricValueColIndex < parts.length) {
+        const val = Number(parts[metricValueColIndex].replace(/['"]/g, ''));
+        if (Number.isFinite(val) && val >= 0 && val <= 100) {
+          values.push(val);
+        }
+      }
+    }
+
+    // If we were parsing data and hit a new loop or category, stop
+    if (parsingData && (trimmed === 'loop_' || (trimmed.startsWith('_') && !trimmed.startsWith('_ma_qa_metric_local.')))) {
+      break;
+    }
   }
+
   return values;
 }
 
