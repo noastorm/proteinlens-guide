@@ -870,6 +870,21 @@ input[type="text"]::placeholder { color: var(--text-dim); }
   animation: fadeIn 0.3s ease both;
 }
 
+/* Overlay auto-fades when 3D viewer loads, reappears on hover */
+.viewer-overlay {
+  transition: opacity 0.7s ease;
+}
+
+.viewer-overlay.faded {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.viewer-canvas:hover .viewer-overlay.faded {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* PAE image fallback when WebGL is unavailable */
 .pae-img {
   position: absolute;

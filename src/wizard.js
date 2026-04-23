@@ -151,9 +151,14 @@ function setEmbeddedViewer(uniprotId, afEntry) {
 
   if (isWebGLAvailable()) {
     // Full embedded 3D viewer
+    const overlay = canvas.querySelector('.viewer-overlay');
+    overlay?.classList.remove('faded');
     iframe.src = `https://molstar.org/viewer/?afdb=${encodeURIComponent(uniprotId)}&hide-controls=1`;
     iframe.classList.add('visible');
     if (caption) caption.textContent = '3D interactive structure — click to interact, or open in AlphaFold DB';
+    iframe.onload = () => {
+      setTimeout(() => overlay?.classList.add('faded'), 2500);
+    };
   } else if (afEntry.paeImageUrl) {
     // PAE heatmap fallback — real AlphaFold data, no WebGL required
     iframe.classList.remove('visible');
