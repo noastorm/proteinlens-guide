@@ -870,12 +870,3 @@ input[type="text"]::placeholder { color: var(--text-dim); }
   animation: fadeIn 0.3s ease both;
 }
 
-/* Viewer overlay fade-out when Mol* loads */
-.viewer-overlay {
-  transition: opacity 0.5s ease;
-}
-
-.viewer-overlay.hidden {
-  opacity: 0;
-  pointer-events: none;
-}

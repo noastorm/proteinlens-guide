@@ -127,9 +127,6 @@ export function resetResultState() {
 
 function setEmbeddedViewer(uniprotId, hasAfModel) {
   const iframe  = document.getElementById('molstarEmbed');
-  const overlay = document.querySelector('.viewer-overlay');
-  if (overlay) overlay.classList.remove('hidden');
-
   if (!hasAfModel) {
     iframe.classList.remove('visible');
     iframe.removeAttribute('src');
@@ -137,9 +134,6 @@ function setEmbeddedViewer(uniprotId, hasAfModel) {
   }
   iframe.src = `https://molstar.org/viewer/?afdb=${encodeURIComponent(uniprotId)}&hide-controls=1`;
   iframe.classList.add('visible');
-  iframe.onload = () => {
-    if (overlay) overlay.classList.add('hidden');
-  };
 }
 
 function renderSequence(seq, features) {
