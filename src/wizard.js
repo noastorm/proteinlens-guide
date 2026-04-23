@@ -125,12 +125,25 @@ export function resetResultState() {
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
 
+function isWebGLAvailable() {
+  try {
+    const canvas = document.createElement('canvas');
+    return !!(window.WebGLRenderingContext &&
+      (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+  } catch {
+    return false;
+  }
+}
+
 function setEmbeddedViewer(uniprotId, hasAfModel) {
-  // Don't auto-load the iframe — WebGL availability varies across machines.
-  // The overlay buttons link directly to AlphaFold DB and Mol* viewer externally.
   const iframe = document.getElementById('molstarEmbed');
-  iframe.classList.remove('visible');
-  iframe.removeAttribute('src');
+  if (!hasAfModel || !isWebGLAvailable()) {
+    iframe.classList.remove('visible');
+    iframe.removeAttribute('src');
+    return;
+  }
+  iframe.src = `https://molstar.org/viewer/?afdb=${encodeURIComponent(uniprotId)}&hide-controls=1`;
+  iframe.classList.add('visible');
 }
 
 function renderSequence(seq, features) {
