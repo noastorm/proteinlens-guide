@@ -39,9 +39,9 @@
           <input type="text" id="searchInput" placeholder="UniProt ID, gene name, or protein name..." />
         </div>
         <div class="search-type-wrap">
-          <button class="type-btn" id="typeDisease" onclick="setType('disease')">Disease / Symptom</button>
           <button class="type-btn active" id="typeUniprot" onclick="setType('uniprot')">UniProt ID</button>
           <button class="type-btn" id="typeGene" onclick="setType('gene')">Gene Name</button>
+          <button class="type-btn" id="typeDisease" onclick="setType('disease')">Disease / Symptom</button>
         </div>
         <button class="btn-primary" id="searchBtn" onclick="runSearch()">▶ Analyze</button>
       </div>
@@ -240,7 +240,7 @@
       <div class="section-full">
         <div class="panel-header">
           <div class="panel-icon" style="background:rgba(255,51,102,0.1)">🧫</div>
-          <div class="panel-title">Disease-Associated Variants</div>
+          <div class="panel-title">Disease-Associated Variants<span id="variantCount" style="color:var(--text-dim);font-size:0.75rem;font-weight:400;margin-left:6px"></span></div>
           <span style="font-size:0.7rem;color:var(--text-dim);margin-left:auto">Source: UniProt Natural Variants</span>
         </div>
         <div class="panel-body" style="overflow-x:auto">
@@ -259,6 +259,7 @@
               </tr>
             </tbody>
           </table>
+          <div id="variantShowMore"></div>
         </div>
       </div>
 

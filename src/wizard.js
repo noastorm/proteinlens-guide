@@ -27,8 +27,16 @@ export async function renderResults(uniprotId, up, af, { setStatus, hideStatus }
   const seq       = up.sequence?.value || '';
   const seqLen    = up.sequence?.length || 0;
 
-  document.getElementById('resName').textContent     = name;
-  document.getElementById('resGene').textContent     = `Gene: ${gene}  ·  UniProt: ${uniprotId}`;
+  document.getElementById('resName').textContent = name;
+  document.getElementById('resGene').innerHTML   =
+    `Gene: ${escapeHtml(gene)}  ·  UniProt: ${escapeHtml(uniprotId)}<button class="copy-btn" id="copyIdBtn" title="Copy UniProt ID to clipboard">⎘ Copy ID</button>`;
+  document.getElementById('copyIdBtn').addEventListener('click', () => {
+    const btn = document.getElementById('copyIdBtn');
+    navigator.clipboard.writeText(uniprotId).catch(() => {});
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '⎘ Copy ID'; btn.classList.remove('copied'); }, 2000);
+  });
   document.getElementById('resOrganism').textContent = organism;
   document.getElementById('seqLen').textContent      = `${seqLen} aa`;
   document.getElementById('seqStrip').innerHTML      = renderSequence(seq, up.features || []);
@@ -61,7 +69,8 @@ export async function renderResults(uniprotId, up, af, { setStatus, hideStatus }
     document.getElementById('diseaseAlert').classList.add('visible');
     document.getElementById('diseaseList').innerHTML = diseases.map(d => {
       const label = d.disease?.diseaseId || d.disease?.description || d.note?.texts?.[0]?.value || 'Disease association';
-      return `<span class="disease-chip">${escapeHtml(String(label).slice(0, 75))}</span>`;
+      const labelStr = String(label);
+      return `<span class="disease-chip" title="${escapeHtml(labelStr)}">${escapeHtml(labelStr.slice(0, 75))}${labelStr.length > 75 ? '…' : ''}</span>`;
     }).join('');
   }
 
@@ -95,6 +104,10 @@ export async function renderResults(uniprotId, up, af, { setStatus, hideStatus }
     : 'No concise UniProt function summary available.';
 
   drawBackbone();
+
+  setTimeout(() => {
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
 }
 
 export function resetResultState() {
@@ -113,7 +126,10 @@ export function resetResultState() {
 // ─── Private helpers ──────────────────────────────────────────────────────────
 
 function setEmbeddedViewer(uniprotId, hasAfModel) {
-  const iframe = document.getElementById('molstarEmbed');
+  const iframe  = document.getElementById('molstarEmbed');
+  const overlay = document.querySelector('.viewer-overlay');
+  if (overlay) overlay.classList.remove('hidden');
+
   if (!hasAfModel) {
     iframe.classList.remove('visible');
     iframe.removeAttribute('src');
@@ -121,6 +137,9 @@ function setEmbeddedViewer(uniprotId, hasAfModel) {
   }
   iframe.src = `https://molstar.org/viewer/?afdb=${encodeURIComponent(uniprotId)}&hide-controls=1`;
   iframe.classList.add('visible');
+  iframe.onload = () => {
+    if (overlay) overlay.classList.add('hidden');
+  };
 }
 
 function renderSequence(seq, features) {
@@ -161,7 +180,6 @@ function renderPLDDT(info) {
     noteEl.textContent  = 'No AlphaFold prediction found for this protein.';
   } else {
     const avg = info.avg;
-    scoreEl.textContent = Number.isFinite(avg) ? avg.toFixed(1) : 'N/A';
     if (avg >= 80) {
       scoreEl.className  = 'conf-score high';
       descEl.textContent = 'High confidence model';
@@ -171,6 +189,17 @@ function renderPLDDT(info) {
     } else {
       scoreEl.className  = 'conf-score low';
       descEl.textContent = 'Low confidence / flexible model';
+    }
+    if (Number.isFinite(avg)) {
+      const dur = 700, t0 = performance.now();
+      const tick = (now) => {
+        const p = Math.min((now - t0) / dur, 1);
+        scoreEl.textContent = (avg * (1 - Math.pow(1 - p, 3))).toFixed(1);
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    } else {
+      scoreEl.textContent = 'N/A';
     }
 
     if (info.bins) {
@@ -258,28 +287,47 @@ function cleanVariantDescription(desc) {
 }
 
 function renderVariants(variants) {
-  const tbody   = document.getElementById('variantRows');
-  const diseased = variants.filter(v => v.description && !/in dbsnp/i.test(v.description));
+  const tbody        = document.getElementById('variantRows');
+  const countEl      = document.getElementById('variantCount');
+  const showMoreWrap = document.getElementById('variantShowMore');
+  const diseased     = variants.filter(v => v.description && !/in dbsnp/i.test(v.description));
+
+  if (countEl) countEl.textContent = diseased.length > 0 ? `(${diseased.length})` : '';
 
   if (!diseased.length) {
     tbody.innerHTML = `<tr><td colspan="4" style="color:var(--text-dim);text-align:center;padding:20px;font-size:0.8rem">No disease-annotated variants found in this UniProt entry.</td></tr>`;
+    if (showMoreWrap) showMoreWrap.innerHTML = '';
     return;
   }
 
-  tbody.innerHTML = diseased.slice(0, 20).map(v => {
+  const makeRows = (list) => list.map((v, idx) => {
     const pos  = v.location?.start?.value || '?';
     const orig = v.alternativeSequence?.originalSequence || '?';
     const alt  = v.alternativeSequence?.alternativeSequences?.[0] || '?';
     const desc = cleanVariantDescription(v.description || '');
     const cls  = classifyVariant(desc);
-
-    return `<tr>
-      <td><span class="var-pos">${escapeHtml(pos)}</span></td>
-      <td><span class="var-change">${escapeHtml(orig)}→${escapeHtml(alt)}</span></td>
+    return `<tr style="animation-delay:${Math.min(idx, 12) * 0.04}s">
+      <td><span class="var-pos">${escapeHtml(String(pos))}</span></td>
+      <td><span class="var-change">${escapeHtml(String(orig))}→${escapeHtml(String(alt))}</span></td>
       <td><span class="pathogenicity ${cls.cls}">${cls.label}</span></td>
       <td style="color:var(--text-dim);font-size:0.72rem">${escapeHtml(desc.slice(0, 180))}${desc.length > 180 ? '…' : ''}</td>
     </tr>`;
   }).join('');
+
+  const LIMIT = 20;
+  tbody.innerHTML = makeRows(diseased.slice(0, LIMIT));
+
+  if (showMoreWrap) {
+    if (diseased.length > LIMIT) {
+      showMoreWrap.innerHTML = `<button class="show-more-btn">Show all ${diseased.length} variants ↓</button>`;
+      showMoreWrap.querySelector('button').addEventListener('click', () => {
+        tbody.innerHTML = makeRows(diseased);
+        showMoreWrap.innerHTML = '';
+      });
+    } else {
+      showMoreWrap.innerHTML = '';
+    }
+  }
 }
 
 function drawBackbone() {
@@ -293,11 +341,15 @@ function drawBackbone() {
   }
   const pathD = points.map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(' ');
 
+  const DASH = 3000;
   const spheres = points.filter((_, i) => i % 8 === 0).map(([x, y], i) => {
     const colors = ['#00d4ff', '#7b2fff', '#00ff88', '#ff6b35'];
-    const c = colors[i % colors.length];
-    return `<circle cx="${x}" cy="${y}" r="5" fill="${c}" opacity="0.55">
-      <animate attributeName="r" values="5;7;5" dur="${1.5 + i * 0.2}s" repeatCount="indefinite"/>
+    const c      = colors[i % colors.length];
+    const appear = (0.8 + i * 0.15).toFixed(2);
+    const pulse  = (parseFloat(appear) + 0.3).toFixed(2);
+    return `<circle cx="${x}" cy="${y}" r="5" fill="${c}" opacity="0">
+      <animate attributeName="opacity" from="0" to="0.55" dur="0.3s" fill="freeze" begin="${appear}s"/>
+      <animate attributeName="r" values="5;7;5" dur="${(1.5 + i * 0.2).toFixed(1)}s" repeatCount="indefinite" begin="${pulse}s"/>
     </circle>`;
   }).join('');
 
@@ -309,7 +361,11 @@ function drawBackbone() {
         <stop offset="100%" stop-color="#00ff88" stop-opacity="0.32"/>
       </linearGradient>
     </defs>
-    <path d="${pathD}" stroke="url(#chainGrad)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${pathD}" stroke="url(#chainGrad)" stroke-width="2.5" fill="none"
+          stroke-linecap="round" stroke-linejoin="round"
+          stroke-dasharray="${DASH}" stroke-dashoffset="${DASH}">
+      <animate attributeName="stroke-dashoffset" from="${DASH}" to="0" dur="1.3s" fill="freeze" begin="0.05s"/>
+    </path>
     ${spheres}
   </svg>`;
 }

@@ -34,7 +34,7 @@ export const DISEASE_MAP = {
   "creutzfeldt-jakob":      "P04156",
   "spinal muscular atrophy":"Q16637", // SMN1
   "sma":                    "Q16637",
-  "friedreich ataxia":      "Q14 197", // FXN
+  "friedreich ataxia":      "Q14197",  // FXN
   "ataxia":                 "Q14197", // FXN
   "narcolepsy":             "O43612", // HCRT (orexin)
   "neurofibromatosis":      "P21359", // NF1
