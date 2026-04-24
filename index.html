@@ -10,7 +10,7 @@
 
 <body>
   <div class="container">
-    <header>
+    <header class="entrance entrance-1">
       <div class="logo">
         <div class="logo-icon">
           <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -32,31 +32,34 @@
     </header>
 
     <!-- SEARCH -->
-    <div class="search-section">
+    <div class="search-section entrance entrance-2">
       <label class="search-label">▸ Search Protein</label>
       <div class="search-row">
         <div class="search-input-wrap">
           <input type="text" id="searchInput" placeholder="UniProt ID, gene name, or protein name..." />
         </div>
         <div class="search-type-wrap">
-          <button class="type-btn active" id="typeUniprot" onclick="setType('uniprot')">UniProt ID</button>
-          <button class="type-btn" id="typeGene" onclick="setType('gene')">Gene Name</button>
-          <button class="type-btn" id="typeDisease" onclick="setType('disease')">Disease / Symptom</button>
+          <button class="type-btn active" id="typeUniprot" onclick="setType('uniprot')" title="Search by UniProt accession number (e.g. P04637)">UniProt ID</button>
+          <button class="type-btn" id="typeGene" onclick="setType('gene')" title="Search by human gene symbol (e.g. TP53, EGFR)">Gene Name</button>
+          <button class="type-btn" id="typeDisease" onclick="setType('disease')" title="Search by disease, symptom or condition (e.g. Alzheimer's, cancer)">Disease / Symptom</button>
         </div>
         <button class="btn-primary" id="searchBtn" onclick="runSearch()">▶ Analyze</button>
       </div>
       <div class="quick-examples">
         Try:
-        <span onclick="quickSearch('P04637', 'uniprot')">TP53 (P04637)</span>
-        <span onclick="quickSearch('P00533', 'uniprot')">EGFR (P00533)</span>
-        <span onclick="quickSearch('P35557', 'uniprot')">GCK (P35557)</span>
-        <span onclick="quickSearch('P01116', 'uniprot')">KRAS (P01116)</span>
-        <span onclick="quickSearch('P0DTD1', 'uniprot')">SARS-CoV-2 3CLpro</span>
+        <span onclick="quickSearch('P04637', 'uniprot')" title="Tumour suppressor — the most studied cancer gene">TP53</span>
+        <span onclick="quickSearch('P00533', 'uniprot')" title="Epidermal growth factor receptor — major cancer drug target">EGFR</span>
+        <span onclick="quickSearch('P35557', 'uniprot')" title="Glucokinase — key enzyme in Type 2 diabetes">GCK (Diabetes)</span>
+        <span onclick="quickSearch('P01116', 'uniprot')" title="KRAS oncogene — mutated in ~25% of all cancers">KRAS</span>
+        <span onclick="quickSearch('P0DTD1', 'uniprot')" title="SARS-CoV-2 main protease — primary COVID-19 drug target">SARS-CoV-2</span>
       </div>
-      <div class="search-helper">
-        <span class="mini-pill">Gene mode: reviewed human entries only</span>
-        <span class="mini-pill">pLDDT now parsed from AlphaFold mmCIF when available</span>
-      </div>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="stats-bar entrance entrance-3">
+      <div class="stat"><span class="stat-val">1,300+</span> proteins indexed</div>
+      <div class="stat"><span class="stat-val">290+</span> disease conditions mapped</div>
+      <div class="stat"><span class="live-dot"></span> Live data · UniProt &amp; AlphaFold</div>
     </div>
 
     <!-- STATUS -->
@@ -79,7 +82,7 @@
           <div class="ext-links" id="extLinks"></div>
         </div>
         <div class="confidence-badge">
-          <div class="conf-label">AlphaFold avg pLDDT</div>
+          <div class="conf-label" title="Per Local Distance Difference Test — AlphaFold's per-residue confidence score. Higher is better. ≥90 = very high, 70–89 = confident, 50–69 = low, &lt;50 = disordered region.">AlphaFold avg pLDDT ⓘ</div>
           <div class="conf-score" id="confScore">—</div>
           <div class="conf-desc" id="confDesc">—</div>
         </div>
@@ -88,13 +91,13 @@
       <div class="provenance-grid">
         <div class="prov-card">
           <div class="prov-label">Data provenance</div>
-          <div class="prov-title">UniProt annotations</div>
+          <div class="prov-title" title="UniProt is the world's largest manually curated protein database, maintained by EMBL-EBI, SIB and PIR.">UniProt annotations</div>
           <div class="prov-body">Sequence, natural variants, disease comments, GO terms, and annotated residues come
             directly from the UniProt entry.</div>
         </div>
         <div class="prov-card">
           <div class="prov-label">Data provenance</div>
-          <div class="prov-title">AlphaFold confidence</div>
+          <div class="prov-title" title="AlphaFold is DeepMind's AI system that predicts 3D protein structures. pLDDT is its per-residue confidence score (0–100).">AlphaFold confidence</div>
           <div class="prov-body">Average confidence and confidence bins are calculated from per-residue pLDDT values
             parsed from the AlphaFold mmCIF model when available.</div>
         </div>
@@ -119,7 +122,7 @@
       <div class="section-full">
         <div class="panel-header">
           <div class="panel-icon" style="background:rgba(0,212,255,0.1)">🧬</div>
-          <div class="panel-title">Canonical Sequence</div>
+          <div class="panel-title" title="The full amino acid sequence of this protein. Green = annotated binding/active site residue. Red = known disease variant position.">Canonical Sequence</div>
           <span style="font-size:0.7rem;color:var(--text-dim);margin-left:auto" id="seqLen">—</span>
         </div>
         <div class="panel-body">
@@ -133,7 +136,7 @@
         <div class="panel">
           <div class="panel-header">
             <div class="panel-icon" style="background:rgba(0,255,136,0.1)">🔬</div>
-            <div class="panel-title">Annotated Functional / Binding Residues</div>
+            <div class="panel-title" title="Residues experimentally annotated in UniProt as active sites, metal-binding sites, or other functional residues. These are the key positions for drug targeting.">Annotated Functional / Binding Residues</div>
           </div>
           <div class="panel-body" id="bindingSites">
             <div style="color:var(--text-dim);font-size:0.8rem">Loading...</div>
@@ -144,7 +147,7 @@
         <div class="panel">
           <div class="panel-header">
             <div class="panel-icon" style="background:rgba(123,47,255,0.1)">📊</div>
-            <div class="panel-title">Structure Confidence (pLDDT)</div>
+            <div class="panel-title" title="pLDDT (predicted Local Distance Difference Test) is AlphaFold's per-residue confidence score. The bars show what fraction of the protein falls into each confidence tier.">Structure Confidence (pLDDT)</div>
           </div>
           <div class="panel-body">
             <div class="plddt-bar-wrap">
@@ -216,7 +219,7 @@
         <div class="panel">
           <div class="panel-header">
             <div class="panel-icon" style="background:rgba(255,107,53,0.1)">⚙️</div>
-            <div class="panel-title">Molecular Function</div>
+            <div class="panel-title" title="Gene Ontology (GO) molecular function terms — what biochemical activity this protein performs (e.g. kinase activity, DNA binding).">Molecular Function</div>
           </div>
           <div class="panel-body">
             <div class="function-tags" id="funcTags">—</div>
@@ -228,7 +231,7 @@
         <div class="panel">
           <div class="panel-header">
             <div class="panel-icon" style="background:rgba(0,212,255,0.1)">🔗</div>
-            <div class="panel-title">Biological Process</div>
+            <div class="panel-title" title="Gene Ontology (GO) biological process terms — which cellular pathways or processes this protein participates in.">Biological Process</div>
           </div>
           <div class="panel-body">
             <div class="function-tags" id="procTags">—</div>
@@ -240,7 +243,7 @@
       <div class="section-full">
         <div class="panel-header">
           <div class="panel-icon" style="background:rgba(255,51,102,0.1)">🧫</div>
-          <div class="panel-title">Disease-Associated Variants<span id="variantCount" style="color:var(--text-dim);font-size:0.75rem;font-weight:400;margin-left:6px"></span></div>
+          <div class="panel-title" title="Single amino acid changes in this protein linked to disease. Pathogenicity classification sourced from UniProt annotations and ClinVar.">Disease-Associated Variants<span id="variantCount" style="color:var(--text-dim);font-size:0.75rem;font-weight:400;margin-left:6px"></span></div>
           <span style="font-size:0.7rem;color:var(--text-dim);margin-left:auto">Source: UniProt Natural Variants</span>
         </div>
         <div class="panel-body" style="overflow-x:auto">
@@ -249,7 +252,7 @@
               <tr>
                 <th>Position</th>
                 <th>Change</th>
-                <th>Pathogenicity</th>
+                <th title="Pathogenicity classification: Pathogenic = causes disease, Likely pathogenic = strong evidence, VUS = uncertain significance, Benign = harmless variant">Pathogenicity</th>
                 <th>Associated Disease / Note</th>
               </tr>
             </thead>

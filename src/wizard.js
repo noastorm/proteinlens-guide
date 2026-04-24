@@ -105,6 +105,14 @@ export async function renderResults(uniprotId, up, af, { setStatus, hideStatus }
 
   drawBackbone();
 
+  // Staggered reveal: each direct child section slides in 80ms apart
+  document.querySelectorAll('#results > *').forEach((el, i) => {
+    el.classList.remove('section-reveal');
+    el.style.animationDelay = `${i * 0.08}s`;
+    void el.offsetWidth; // force reflow so re-adding the class re-triggers animation
+    el.classList.add('section-reveal');
+  });
+
   setTimeout(() => {
     document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 100);

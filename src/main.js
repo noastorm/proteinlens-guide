@@ -16,6 +16,34 @@ loadProteins().catch(() => {
   console.warn('proteins.json not available — disease search will fall back to UniProt gene search.');
 });
 
+// ─── Cycling placeholder ──────────────────────────────────────────────────────
+const PLACEHOLDERS = [
+  "Try 'Alzheimer’s' or 'cancer'...",
+  "Try a gene name like 'BRCA1' or 'TP53'...",
+  "Try a UniProt ID like 'P04637'...",
+  "Try 'Parkinson’s' or 'diabetes'...",
+  "Try 'EGFR', 'insulin', or 'COVID-19'...",
+];
+let _phIdx = 0;
+const _input = document.getElementById('searchInput');
+setInterval(() => {
+  if (document.activeElement !== _input && !_input.value) {
+    _phIdx = (_phIdx + 1) % PLACEHOLDERS.length;
+    _input.placeholder = PLACEHOLDERS[_phIdx];
+  }
+}, 3000);
+
+// ─── Attract-mode: auto-demo after 90s idle ───────────────────────────────────
+let _idleTimer;
+function _resetIdle() {
+  clearTimeout(_idleTimer);
+  _idleTimer = setTimeout(() => quickSearch('P04637', 'uniprot'), 90000);
+}
+['mousemove', 'keydown', 'click', 'touchstart'].forEach(e =>
+  document.addEventListener(e, _resetIdle, { passive: true })
+);
+_resetIdle();
+
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 
 function setType(t) {
